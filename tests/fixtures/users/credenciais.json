@@ -1,0 +1,8 @@
+{
+  "superAdmin": {
+    "name": "Super Admin Demo",
+    "email": "superadmin@example.com",
+    "password": "Admin@123"
+  },
+  "defaultPassword": "Senha@123"
+}

@@ -1,0 +1,52 @@
+{
+  "pt": {
+    "category": [
+      { "value": "Peças", "toLabel": "Peças" },
+      { "value": "SKU (White Goods Mercado Nacional)", "toLabel": "SKU (White Goods Mercado Nacional)" },
+      { "value": "Modelo Usual (White Goods Mercado Nacional)", "toLabel": "Modelo Usual (White Goods Mercado Nacional)" }
+    ],
+    "status": [
+      { "value": "Ativo", "toLabel": "Ativo" },
+      { "value": "Inativo", "toLabel": "Inativo" }
+    ],
+    "role": [
+      { "value": "Super Admin", "toLabel": "Super Admin" },
+      { "value": "Proprietário", "toLabel": "Proprietário" },
+      { "value": "Atendente", "toLabel": "Atendente" }
+    ],
+    "assignableRole": [
+      { "value": "Proprietário", "toLabel": "Proprietário" },
+      { "value": "Atendente", "toLabel": "Atendente" }
+    ],
+    "country": [
+      { "value": "brasil", "toLabel": "Brasil" },
+      { "value": "argentina", "toLabel": "Argentina" },
+      { "value": "colombia", "toLabel": "Colômbia" }
+    ]
+  },
+  "es": {
+    "category": [
+      { "value": "Peças", "toLabel": "Repuestos" },
+      { "value": "SKU (White Goods Mercado Nacional)", "toLabel": "SKU (Línea Blanca Mercado Nacional)" },
+      { "value": "Modelo Usual (White Goods Mercado Nacional)", "toLabel": "Modelo Habitual (Línea Blanca Mercado Nacional)" }
+    ],
+    "status": [
+      { "value": "Ativo", "toLabel": "Activo" },
+      { "value": "Inativo", "toLabel": "Inactivo" }
+    ],
+    "role": [
+      { "value": "Super Admin", "toLabel": "Super Admin" },
+      { "value": "Proprietário", "toLabel": "Propietario" },
+      { "value": "Atendente", "toLabel": "Asistente" }
+    ],
+    "assignableRole": [
+      { "value": "Proprietário", "toLabel": "Propietario" },
+      { "value": "Atendente", "toLabel": "Asistente" }
+    ],
+    "country": [
+      { "value": "brasil", "toLabel": "Brasil" },
+      { "value": "argentina", "toLabel": "Argentina" },
+      { "value": "colombia", "toLabel": "Colombia" }
+    ]
+  }
+}

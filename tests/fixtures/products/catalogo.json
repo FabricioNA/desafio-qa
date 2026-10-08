@@ -1,0 +1,194 @@
+[
+  {
+    "code": "K51720601",
+    "name": "ETIQUETA ENCE QZ7K 127V",
+    "category": "Peças",
+    "model": "",
+    "status": "Ativo",
+    "price": 14.9
+  },
+  {
+    "code": "K51720602",
+    "name": "ETIQUETA ENCE QZ7K 220V",
+    "category": "Peças",
+    "model": "",
+    "status": "Ativo",
+    "price": 14.9
+  },
+  {
+    "code": "K50816403",
+    "name": "GUIA RAPIDO QZ7K",
+    "category": "Peças",
+    "model": "",
+    "status": "Ativo",
+    "price": 9.5
+  },
+  {
+    "code": "318440_old",
+    "name": "QZ7K",
+    "category": "SKU (White Goods Mercado Nacional)",
+    "model": "QZ7K",
+    "status": "Inativo",
+    "price": 3290
+  },
+  {
+    "code": "K50816201",
+    "name": "MANUAL INSTRUCOES IM3/QZ7K",
+    "category": "Peças",
+    "model": "",
+    "status": "Ativo",
+    "price": 18.5
+  },
+  {
+    "code": "R7305FBA230",
+    "name": "REFRIGERADOR FROST FREE QZ7K",
+    "category": "SKU (White Goods Mercado Nacional)",
+    "model": "QZ7K",
+    "status": "Ativo",
+    "price": 3490
+  },
+  {
+    "code": "R7305FBA130",
+    "name": "REFRIGERADOR FROST FREE QZ7K",
+    "category": "SKU (White Goods Mercado Nacional)",
+    "model": "QZ7K",
+    "status": "Ativo",
+    "price": 3490
+  },
+  {
+    "code": "QZ7K",
+    "name": "REFRIGERADOR FROST FREE QZ7K",
+    "category": "Modelo Usual (White Goods Mercado Nacional)",
+    "model": "",
+    "status": "Ativo",
+    "price": 3490
+  },
+  {
+    "code": "K51730101",
+    "name": "ETIQUETA ENCE LV2P 127V",
+    "category": "Peças",
+    "model": "",
+    "status": "Ativo",
+    "price": 14.9
+  },
+  {
+    "code": "K51730102",
+    "name": "ETIQUETA ENCE LV2P 220V",
+    "category": "Peças",
+    "model": "",
+    "status": "Ativo",
+    "price": 14.9
+  },
+  {
+    "code": "K50826403",
+    "name": "GUIA RAPIDO LV2P",
+    "category": "Peças",
+    "model": "",
+    "status": "Ativo",
+    "price": 9.5
+  },
+  {
+    "code": "K50826201",
+    "name": "MANUAL INSTRUCOES LV2/LV2P",
+    "category": "Peças",
+    "model": "",
+    "status": "Ativo",
+    "price": 18.5
+  },
+  {
+    "code": "W2210LVA110",
+    "name": "LAVADORA DE ROUPAS LV2P",
+    "category": "SKU (White Goods Mercado Nacional)",
+    "model": "LV2P",
+    "status": "Inativo",
+    "price": 2190
+  },
+  {
+    "code": "W2210LVA220",
+    "name": "LAVADORA DE ROUPAS LV2P",
+    "category": "SKU (White Goods Mercado Nacional)",
+    "model": "LV2P",
+    "status": "Ativo",
+    "price": 2190
+  },
+  {
+    "code": "LV2P",
+    "name": "LAVADORA DE ROUPAS LV2P",
+    "category": "Modelo Usual (White Goods Mercado Nacional)",
+    "model": "",
+    "status": "Ativo",
+    "price": 2190
+  },
+  {
+    "code": "K51740101",
+    "name": "ETIQUETA ENCE RM4T 127V",
+    "category": "Peças",
+    "model": "",
+    "status": "Ativo",
+    "price": 14.9
+  },
+  {
+    "code": "K51740102",
+    "name": "ETIQUETA ENCE RM4T 220V",
+    "category": "Peças",
+    "model": "",
+    "status": "Ativo",
+    "price": 14.9
+  },
+  {
+    "code": "K50836403",
+    "name": "GUIA RAPIDO RM4T",
+    "category": "Peças",
+    "model": "",
+    "status": "Ativo",
+    "price": 9.5
+  },
+  {
+    "code": "M4401MOA110",
+    "name": "MICRO-ONDAS 30L RM4T",
+    "category": "SKU (White Goods Mercado Nacional)",
+    "model": "RM4T",
+    "status": "Inativo",
+    "price": 690
+  },
+  {
+    "code": "M4401MOA220",
+    "name": "MICRO-ONDAS 30L RM4T",
+    "category": "SKU (White Goods Mercado Nacional)",
+    "model": "RM4T",
+    "status": "Ativo",
+    "price": 690
+  },
+  {
+    "code": "RM4T",
+    "name": "MICRO-ONDAS 30L RM4T",
+    "category": "Modelo Usual (White Goods Mercado Nacional)",
+    "model": "",
+    "status": "Ativo",
+    "price": 690
+  },
+  {
+    "code": "K51750101",
+    "name": "ETIQUETA ENCE CF9X 127V",
+    "category": "Peças",
+    "model": "",
+    "status": "Ativo",
+    "price": 14.9
+  },
+  {
+    "code": "K50846403",
+    "name": "GUIA RAPIDO CF9X",
+    "category": "Peças",
+    "model": "",
+    "status": "Ativo",
+    "price": 9.5
+  },
+  {
+    "code": "C9100CFA110",
+    "name": "COIFA DE PAREDE CF9X",
+    "category": "SKU (White Goods Mercado Nacional)",
+    "model": "CF9X",
+    "status": "Inativo",
+    "price": 1290
+  }
+]
