@@ -47,6 +47,10 @@
       ]
     }
   },
+  "limites": {
+    "brasil": { "min": 10, "max": 11, "inicio": "11" },
+    "colombia": { "min": 10, "max": 10, "inicio": "30" }
+  },
   "interface": {
     "placeholders": {
       "brasil": "+55 (__) _____-____",

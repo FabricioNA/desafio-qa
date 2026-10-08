@@ -1,110 +1,164 @@
-# Desafio QA — Mini Portal (sistema-alvo)
+# Desafio QA — Mini Portal
 
-Sistema fictício, Ele existe para ser **testado**: não há testes automatizados no repositório, eles são o desafio.
+Sistema fictício (Node + Express + TypeScript, MongoDB, JWT) criado para ser **testado**, e a suíte de testes
+automatizados que o valida: **Cypress com Page Object Model**, camadas de **API** e **UI**, relatório HTML,
+quality gate e pipeline no GitHub Actions.
 
-- **Backend:** Node + Express + TypeScript, MongoDB, autenticação por JWT (permissões dentro do token).
-- **Front:** HTML + TypeScript (sem framework), gerado com esbuild e servido pelo próprio backend.
-- **Roda igual** na máquina local e no GitHub Actions (`npm start` sobe tudo em `http://localhost:3000`).
+| | |
+|---|---|
+| **Sistema-alvo** | Portal com 4 telas (Autorizadas, Contatos, Produtos, Funcionários), 3 perfis e 3 países (Brasil, Argentina, Colômbia) |
+| **Suíte** | 271 testes automatizados (171 de API e 100 de UI) cobrindo as regras de negócio RN01 a RN14 |
+| **Resultado atual** | 253 passam; 17 falham e evidenciam **9 defeitos** do sistema; 1 ignorado. Nenhuma regressão |
+| **Pipeline** | Pull request, push na `main`, agendado (dias úteis) e manual; relatório publicado como artefato |
 
-## Requisitos
+---
 
-- Node 20 ou superior
-- MongoDB rodando (local em `mongodb://localhost:27017` ou outro endereço via `MONGO_URI`)
+## Resumo executivo
+
+### O que foi entregue
+
+- **Testes de API** (`tests/api/`, 9 specs): contratos, **matriz de permissões perfil × endpoint**, tentativas de burlar o
+  isolamento entre autorizadas, validações, valores limite, entradas malformadas, telefone por país, filtros e
+  paginação, idioma e listas de valores, token e expiração da sessão, SLA de 2 s.
+- **Testes de UI** (`tests/desafio-qa/`, 7 contextos + regressão): login, menu e acesso por perfil, sessão expirada,
+  cadastro de autorizada, contatos (máscara de telefone por país), funcionários e produtos. Telas abertas por deep link
+  com token vindo da API, erros simulados com `cy.intercept`, renderização segura de texto (XSS).
+- **Relatórios**: HTML por suíte com gráficos e screenshots das falhas embutidos (`reports/api/index.html`,
+  `reports/e2e/index.html`).
+- **Quality gate** (`scripts/quality-gate.js`): separa **regressão** (falha sem marcação) de **defeito conhecido**
+  (`[BUG-xxx]`), para que defeitos abertos não escondam uma quebra nova.
+- **Pipeline** (`.github/workflows/ci.yml`): sobe MongoDB e a aplicação, roda as duas suítes, aplica o gate e publica o artefato
+  `relatorios-testes`.
+- **Documentação** (`docs/`): [testes.md](docs/testes.md), [decisoes.md](docs/decisoes.md) e [defeitos.md](docs/defeitos.md).
+
+### Principais decisões
+
+- **Pirâmide de testes:** regra de negócio e segurança na API (rápida e determinística); a UI valida só o que o usuário vê.
+- **Esconder na tela não é segurança:** autorização é provada no backend, na matriz de permissões e nos testes de isolamento.
+- **Priorização por risco:** P0 (acesso, isolamento, consulta, unicidade, país, sessão), P1 (cadastros, validações,
+  telefone, produtos) e P2 (menu, idioma, listas).
+- **Testes independentes:** cada spec cria a própria autorizada pela API, com dados únicos. Sem ordem entre specs, sem
+  limpeza e sem `retries` (uma falha é determinística, repetir só esconderia instabilidade).
+- **Testes descrevem o esperado pelas regras:** quando o sistema diverge, o teste falha com `[BUG-xxx]`. Nada foi
+  ignorado nem teve a asserção invertida para "ficar verde".
+- **Page Object + comandos por contexto:** `data-testid` como único seletor, massa de dados em fixtures.
+
+Detalhes e justificativas em [docs/decisoes.md](docs/decisoes.md).
+
+### Defeitos encontrados
+
+| ID | Defeito | Severidade | Regra |
+|---|---|---|---|
+| BUG-001 | Atendente consegue cadastrar funcionários (API `201`; formulário aparece em `#/employees/create`) | Alta | RN01, RN06 |
+| BUG-002 | Login aceita `GET /api/login` e o front envia a senha na URL | Alta | RN14 |
+| BUG-003 | Backend não valida nem normaliza o telefone da Argentina | Média | RN09, RN10 |
+| BUG-004 | Campo de telefone da Argentina sem máscara, prefixo `+54` e validação | Média | RN10 |
+| BUG-005 | Formulário de Contatos da Argentina aparece em português | Média | RN07 |
+| BUG-006 | Coluna Categoria dos Produtos mostra o valor em português, sem tradução | Média | RN07, RN08 |
+| BUG-007 | Cadastro de funcionário sem cargo não informa o motivo | Baixa | RN09 |
+| BUG-008 | Falha na consulta de produtos não avisa o usuário | Baixa | — |
+| BUG-009 | JSON malformado ou corpo acima de 100 kb resulta em `500` em vez de `400`/`413` | Média | RN09 |
+
+Passos, esperado, obtido e causa provável de cada um em [docs/defeitos.md](docs/defeitos.md).
+
+### Resultado da última execução
+
+| Suíte | Specs | Testes | Passaram | Falharam | Ignorados |
+|---|---:|---:|---:|---:|---:|
+| API | 9 | 171 | 162 | 9 | 0 |
+| UI | 8 | 100 | 91 | 8 | 1 |
+| **Total** | **17** | **271** | **253** | **17** | **1** |
+
+As 17 falhas são todas de testes marcados `[BUG-xxx]`. O quality gate (modo padrão) fica **aprovado**; uma falha sem
+marcação o **reprova**. O teste ignorado é a colagem de telefone da Argentina, que não tem massa de dados.
+
+---
 
 ## Como rodar
 
+**Requisitos:** Node 20 ou superior e MongoDB (`mongodb://localhost:27017`, ou outro endereço em `MONGO_URI`).
+
 ```bash
 npm install
-npm start          # gera o front, conecta no Mongo, cria os dados iniciais (se vazio) e sobe a API + front
+npm start          # gera o front, conecta no Mongo, cria os dados iniciais (se vazio) e sobe em http://localhost:3000
 ```
 
-Abra `http://localhost:3000`.
+Em outro terminal, com a aplicação no ar:
 
-Outros comandos:
+```bash
+npm run seed       # (opcional) volta ao estado inicial antes de testar
+npm run test:api   # reports/api/index.html
+npm run test:e2e   # reports/e2e/index.html
+npm run quality-gate
+```
 
 | Comando | O que faz |
 |---|---|
-| `npm run seed` | Apaga e recria os dados iniciais (1 Super Admin e 24 produtos; remove autorizadas, funcionários e contatos criados) |
-| `npm run dev` | Igual ao `start`, reiniciando o servidor a cada alteração |
-| `npm run typecheck` | Checagem de tipos |
-| `npm run test:api` | Testes de API (Cypress) — relatório em `reports/api/index.html` |
-| `npm run test:e2e` | Testes de interface (Cypress) — relatório em `reports/e2e/index.html` |
-| `npm run cy:open` | Abre o Cypress no modo interativo |
+| `npm start` / `npm run dev` | Sobe a aplicação (o `dev` reinicia a cada alteração) |
+| `npm run seed` | Apaga e recria os dados (1 Super Admin e 24 produtos; remove autorizadas, funcionários e contatos criados) |
+| `npm run typecheck` | Checagem de tipos da aplicação |
+| `npm run test:api` | Testes de API (Cypress) |
+| `npm run test:e2e` | Testes de interface (Cypress) |
+| `npm run quality-gate` | Separa regressão de defeito conhecido; `quality-gate:strict` reprova também os defeitos abertos |
+| `npm run cy:open` | Cypress no modo interativo |
 
-Os testes exigem a aplicação no ar em `http://localhost:3000` (`npm start`); use `BASE_URL` para outro endereço.
-Documentação de cada teste em [docs/testes.md](docs/testes.md), decisões em [docs/decisoes.md](docs/decisoes.md) e defeitos encontrados em [docs/defeitos.md](docs/defeitos.md).
+Use `BASE_URL` para testar outro endereço e um banco próprio com `MONGO_DB`. As variáveis (porta, Mongo, segredo do token
+e credenciais iniciais, todas fictícias) ficam no `.env`.
 
-Configuração: as variáveis (porta, Mongo, segredo do token e credenciais iniciais) ficam no arquivo `.env`, na raiz do projeto (todos os valores são fictícios).
+**Acesso inicial:** `superadmin@example.com` / `Admin@123`. Proprietários e funcionários criados pelas telas recebem a
+senha `Senha@123`.
 
-## Regras de negócio
+---
 
-Regras gerais do sistema, descritas de forma resumida. Elas valem como referência do comportamento esperado.
+## Pipeline (GitHub Actions)
 
-- **RN01 — Acesso por perfil.** Cada usuário só acessa as telas e executa as ações permitidas ao seu perfil, tanto pela interface quanto pela API.
-- **RN02 — Menu.** O menu exibe apenas as telas que o usuário pode acessar.
-- **RN03 — Autorizadas.** Uma autorizada é uma empresa parceira, criada por um administrador da plataforma junto com o seu proprietário. O país é definido nesse cadastro.
-- **RN04 — Isolamento.** Os dados de uma autorizada não são visíveis nem alteráveis por usuários de outra autorizada.
-- **RN05 — Funcionários.** Os funcionários de uma autorizada são cadastrados pelos perfis com permissão de escrita. Cada funcionário pertence a uma única autorizada e herda o país e o idioma dela.
-- **RN06 — Consulta.** Perfis de consulta visualizam as informações da sua autorizada, mas não criam nem alteram dados.
-- **RN07 — Idioma.** Os textos da interface são exibidos no idioma do usuário, definido pelo país da autorizada.
-- **RN08 — Listas de valores.** Os valores de listas (cargo, categoria, situação, país) são identificados da mesma forma em todo o sistema e exibidos ao usuário no idioma dele.
-- **RN09 — Campos obrigatórios e formatos.** Os formulários rejeitam dados incompletos ou fora do formato esperado e informam o motivo ao usuário.
-- **RN10 — Telefone.** O telefone segue o formato do país do usuário.
-- **RN11 — Unicidade.** Não pode haver dois cadastros com o mesmo e-mail dentro do escopo em que ele deve ser único.
-- **RN12 — Produtos.** A consulta de produtos pode ser filtrada e é paginada; cada produto exibe a sua imagem.
-- **RN13 — Restrições por país.** Algumas funcionalidades podem não estar disponíveis para determinados países.
-- **RN14 — Sessão.** O acesso exige autenticação e a sessão tem prazo de validade.
+Workflow em [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
-## Como o sistema funciona
-
-O modelo segue a lógica : cada **autorizada** (empresa parceira) enxerga apenas os próprios dados.
-
-1. Existe **1 Super Admin** já cadastrado (administrador da plataforma). Ele **não** pertence a nenhuma autorizada.
-2. O Super Admin cria uma **autorizada** e o seu **proprietário**, definindo o **país** (tela "Autorizadas", visível só para ele).
-3. O **proprietário** entra, cadastra os funcionários **da própria autorizada** (Atendente ou Proprietário) e opera os contatos dela.
-4. O **atendente** só visualiza.
-
-O **idioma da interface** vem do token e é definido pelo país da autorizada (Brasil: `pt`; Argentina e Colômbia: `es`).
-Funcionários novos herdam país e idioma da autorizada.
-
-### Acesso inicial
-
-| Campo | Valor |
+| Gatilho | Motivo |
 |---|---|
-| E-mail do Super Admin | `superadmin@example.com` |
-| Senha | `Admin@123` |
+| `pull_request` | feedback antes do merge |
+| `push` na `main` | garante a branch principal |
+| agendado (dias úteis, 03:00 BRT) | detecta regressões sem mudança de código; reprova também por defeito aberto |
+| manual (`workflow_dispatch`) | reexecução sob demanda, com a opção `strict` |
 
-Todo proprietário e funcionário criado pelas telas recebe a senha padrão `Senha@123` (`DEFAULT_EMPLOYEE_PASSWORD`).
+Etapas: `npm ci` → typecheck → build do front → seed → subir a aplicação e aguardar `/api/health` → instalar o Cypress
+(com cache) → `test:api` → `test:e2e` → **quality gate** → publicar o artefato **relatorios-testes** (HTML, JSON e
+screenshots das falhas) → reprovar o job se o gate reprovou. O resumo do gate aparece na página da execução.
 
-Para ver o sistema em espanhol: entre como Super Admin, crie uma autorizada com país Argentina (ou Colômbia) e um
-e-mail de proprietário, saia e entre com esse e-mail e a senha padrão.
+---
 
-## Telas
+## Documentação
 
-O menu superior mostra apenas as telas que o token do usuário permite acessar.
+| Documento | Conteúdo |
+|---|---|
+| [docs/testes.md](docs/testes.md) | Cada teste de API e UI: o que consiste, o que valida, como é testado e o que se espera |
+| [docs/decisoes.md](docs/decisoes.md) | Estratégia, priorização por risco, organização, quality gate, pipeline e próximos passos |
+| [docs/defeitos.md](docs/defeitos.md) | Os 9 defeitos com passos de reprodução, observações e o que foi verificado sem defeito |
 
-| Tela | Quem vê | Conteúdo |
-|---|---|---|
-| **Autorizadas** | só o Super Admin | Formulário (nome da autorizada, nome e e-mail do proprietário, país) e listagem de autorizadas |
-| **Contatos** | proprietário e atendente | Formulário de 3 campos (nome, e-mail, telefone) e listagem dos contatos da autorizada. O formato de telefone e o placeholder mudam conforme o país |
-| **Produtos** | todos | 3 filtros (nome ou código, categoria, situação) e tabela paginada (10 por página) com imagem, código, nome, categoria, modelo, situação e preço, vinda do backend; as imagens ficam no MongoDB |
-| **Funcionários** | proprietário e atendente | Formulário de 3 campos (nome, e-mail, cargo) e listagem, com filtro por cargo, dos funcionários **da própria autorizada** |
+---
 
-## Perfis e permissões
+## O sistema-alvo em resumo
 
-O backend define as permissões no login e as devolve no JWT, por exemplo:
+### Regras de negócio
 
-```json
-{
-  "role": "Proprietário",
-  "roleToLabel": "Propietario",
-  "language": "es",
-  "country": "argentina",
-  "authorizedId": "…",
-  "authorizedName": "Autorizada Exemplo",
-  "permissions": { "contacts": "read/write", "products": "read", "employees": "read/write" }
-}
-```
+| Regra | Resumo |
+|---|---|
+| **RN01** Acesso por perfil | Cada usuário só acessa telas e ações do seu perfil, na interface e na API |
+| **RN02** Menu | Mostra só as telas permitidas |
+| **RN03** Autorizadas | Empresa parceira criada pelo administrador junto com o proprietário; o país é definido aqui |
+| **RN04** Isolamento | Dados de uma autorizada não são visíveis nem alteráveis por outra |
+| **RN05** Funcionários | Cadastrados por quem tem escrita; pertencem a uma autorizada e herdam país e idioma |
+| **RN06** Consulta | Perfis de consulta visualizam, mas não criam nem alteram |
+| **RN07** Idioma | Interface no idioma do país da autorizada |
+| **RN08** Listas de valores | Mesmo valor em todo o sistema, exibido no idioma do usuário |
+| **RN09** Campos e formatos | Formulários rejeitam dados incompletos ou fora do formato e informam o motivo |
+| **RN10** Telefone | Segue o formato do país do usuário |
+| **RN11** Unicidade | Sem e-mail duplicado dentro do escopo em que deve ser único |
+| **RN12** Produtos | Consulta filtrada e paginada, com imagem |
+| **RN13** Restrição por país | Alguns módulos não existem para certos países |
+| **RN14** Sessão | Exige autenticação; a sessão expira |
+
+### Perfis e telas
 
 | Cargo | Autorizadas | Contatos | Produtos | Funcionários |
 |---|---|---|---|---|
@@ -112,91 +166,61 @@ O backend define as permissões no login e as devolve no JWT, por exemplo:
 | Proprietário | — | ler e criar | ler | ler e criar |
 | Atendente | — | só ler | ler | só ler |
 
-Regras adicionais:
-
-- Contatos e funcionários são **isolados por autorizada**: um usuário nunca vê nem cria dados de outra autorizada.
-- O cadastro de funcionário só oferece Atendente e Proprietário (o Super Admin só existe no seed).
-- O módulo de **Funcionários não existe para usuários do país `colombia`**: a permissão não vem no token,
-  o item some do menu e a API responde 403.
-- O e-mail de um funcionário é único em todo o sistema; o e-mail de um contato é único dentro da autorizada.
-- O backend valida assinatura e expiração do token em toda requisição e confia nas permissões do próprio token.
-
-## API
-
-Documentação interativa (Swagger) com a aplicação no ar: [http://localhost:3000/api-docs.html](http://localhost:3000/api-docs.html) (especificação em `/openapi.json`).
-
-Todas as rotas, exceto `login` e `health`, exigem `Authorization: Bearer <token>`.
-
-| Método e rota | Permissão | Descrição |
-|---|---|---|
-| `GET /api/health` | — | Verificação de saúde |
-| `POST /api/login` | — | `{ email, password }` → `{ token }` |
-| `GET /api/picklists` | qualquer usuário logado | Opções dos picklists (`category`, `status`, `role`, `assignableRole`, `country`) no idioma do usuário |
-| `GET /api/authorizeds` | authorizeds (leitura) | Autorizadas com proprietário e quantidade de funcionários |
-| `POST /api/authorizeds` | authorizeds (escrita) | `{ authorizedName, ownerName, ownerEmail, country }` cria a autorizada e o proprietário |
-| `GET /api/contacts` | contacts (leitura) | Últimos contatos da autorizada |
-| `POST /api/contacts` | contacts (escrita) | `{ name, email, phone }` |
-| `GET /api/products` | products (leitura) | Query: `name` (busca no nome ou no código), `category` (`Peças`, `SKU (White Goods Mercado Nacional)`, `Modelo Usual (White Goods Mercado Nacional)`), `status` (`Ativo`, `Inativo`), `page`, `pageSize` |
-| `GET /api/products/:id/image` | products (leitura) | Imagem PNG do produto |
-| `GET /api/employees` | employees (leitura) | Funcionários da autorizada. Query opcional: `role` |
-| `POST /api/employees` | employees (escrita) | `{ name, email, role }` na autorizada do usuário |
-
-### Valores e rótulos (picklists)
-
-Os valores de picklist **trafegam sempre em português** (por exemplo `category: "Casa"`, `status: "Ativo"`,
-`role: "Atendente"`), com o mesmo nome de parâmetro nas requisições e nas respostas. Para exibição, o backend devolve,
-ao lado de cada campo, o texto no idioma do usuário (vindo do token) em `<campo>ToLabel`
-(por exemplo `category` e `categoryToLabel`). As listas de opções devolvem pares `{ value, toLabel }`:
-o front envia o `value` e exibe o `toLabel`.
-
-Erros seguem o padrão `{ "error": "CODIGO", "fields": { "campo": "CODIGO" } }`. Códigos usados:
-`UNAUTHORIZED`, `FORBIDDEN`, `VALIDATION`, `INVALID_CREDENTIALS`, `DUPLICATE_EMAIL`, `NOT_FOUND`.
-Os códigos de campo (`REQUIRED`, `MIN_LENGTH`, `INVALID_EMAIL`, `INVALID_PHONE`, `INVALID_ROLE`, `INVALID_COUNTRY`)
-são traduzidos pelo front.
+- O Super Admin não pertence a nenhuma autorizada; cria a autorizada e o proprietário, que cadastra funcionários e contatos.
+- O módulo de **Funcionários não existe para a Colômbia**: a permissão não vem no token, o item some do menu e a API responde `403`.
+- E-mail de funcionário é único em todo o sistema; e-mail de contato é único dentro da autorizada.
+- Idioma: Brasil `pt`; Argentina e Colômbia `es`. Os valores de listas trafegam sempre em português e o backend devolve o
+  texto no idioma do usuário em `<campo>ToLabel`.
+- As permissões vão no JWT e o backend valida assinatura e expiração em toda requisição.
 
 ### Telefone por país
 
-| País | Código | Dígitos do número nacional |
-|---|---|---|
-| `brasil` | 55 | 10 ou 11 |
-| `argentina` | 54 | 10 |
-| `colombia` | 57 | 10 |
+| País | Código | Dígitos | Máscara no front |
+|---|---|---|---|
+| Brasil | 55 | 10 ou 11 | `(00) 0000-0000` ou `(00) 00000-0000` |
+| Argentina | 54 | 10 | só dígitos |
+| Colômbia | 57 | 10 | `000 000 0000` |
 
-O telefone é guardado normalizado (`+<código><número>`).
+Guardado normalizado como `+<código><número>`; o backend valida de novo com as mesmas regras.
 
-No front, o campo **Telefone** aplica:
+### API
 
-- bloqueio de letras e símbolos, e limite de dígitos do país;
-- prefixo automático (`+55 `, `+54 ` ou `+57 `) e máscara: Brasil `(00) 0000-0000` (fixo) ou `(00) 00000-0000` (celular),
-  Colômbia `000 000 0000`, Argentina só dígitos;
-- aceita colar o número com ou sem o código do país;
-- mensagem "telefone inválido" ao sair do campo com quantidade de dígitos insuficiente (ela some ao voltar a digitar).
+Swagger com a aplicação no ar: [http://localhost:3000/api-docs.html](http://localhost:3000/api-docs.html)
+(especificação em `/openapi.json`). Rotas protegidas exigem `Authorization: Bearer <token>`.
 
-O backend valida de novo, com as mesmas regras.
+| Rota | Permissão |
+|---|---|
+| `GET /api/health`, `POST /api/login` | pública |
+| `GET /api/picklists` | qualquer usuário logado |
+| `GET`, `POST /api/authorizeds` | authorizeds |
+| `GET`, `POST /api/contacts` | contacts |
+| `GET /api/products`, `GET /api/products/:id/image` | products |
+| `GET`, `POST /api/employees` | employees |
 
-## Estrutura
+Erros: `{ "error": "CODIGO", "fields": { "campo": "CODIGO" } }` com `UNAUTHORIZED`, `FORBIDDEN`, `VALIDATION`,
+`INVALID_CREDENTIALS`, `DUPLICATE_EMAIL` e `NOT_FOUND`.
+
+---
+
+## Estrutura do repositório
 
 ```
-src/server/   API (rotas, auth, permissões, validação, seed, conexão com o Mongo)
-src/web/      Front (páginas, i18n em pt/es/en, cliente da API)
-tests/        Suíte Cypress (API e UI com Page Objects, fixtures e suporte)
-docs/         Decisões de teste e registro de defeitos
-public/       index.html e CSS (o app.js é gerado no build)
-.github/workflows/ci.yml   Instala, checa tipos, gera o front e confere o health check
+src/server/                Sistema-alvo: API, auth, permissões, validação, seed
+src/web/                   Sistema-alvo: front (páginas, i18n pt/es/en)
+public/                    index.html e CSS (o app.js é gerado no build)
+tests/
+  api/<domínio>/           Testes de API (*.test.js)
+  desafio-qa/<Contexto>/   Testes de UI: <Contexto>.test.js + commands.js; Regression.test.js
+  fixtures/                Massa de dados
+  support/                 Page Objects, clientes de API, tenant, matriz de permissões
+scripts/quality-gate.js    Classifica falhas: regressão x defeito conhecido
+docs/                      testes.md, decisoes.md, defeitos.md
+reports/                   Relatórios gerados (não versionados)
+cypress.config.js          Configuração, reporter e tarefas do Cypress
+.github/workflows/ci.yml   Pipeline
 ```
 
-## Dicas para quem for testar
+---
 
-
-- Para começar sempre do mesmo estado, rode `npm run seed` antes dos testes (use um banco próprio com `MONGO_DB`).
-
-## GitHub Actions
-
-O workflow sobe um MongoDB como serviço, instala as dependências (`npm ci`), checa tipos, gera o front, recria os dados,
-inicia a aplicação, roda `test:api` e `test:e2e` e publica o artefato **relatorios-testes** (HTML e screenshots das falhas).
-Gatilhos: pull request, push na `main`, agendado (dias úteis) e manual. Detalhes em [docs/decisoes.md](docs/decisoes.md).
-
-## Anonimização
-
-Nenhum dado, nome, endereço ou termo de empresa real foi usado: e-mails em `example.com`, produtos e códigos inventados
-("K51720601", modelos "QZ7K", "LV2P"…), imagens geradas por código, segredo de JWT apenas de exemplo.
+*Anonimização: nenhum dado, nome, endereço ou termo de empresa real foi usado. E-mails em `example.com`, produtos e
+códigos inventados, imagens geradas por código e segredo de JWT apenas de exemplo.*

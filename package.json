@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test:api": "cross-env REPORT_DIR=reports/api cypress run --spec \"tests/api/**/*.test.js\"",
     "test:e2e": "cross-env REPORT_DIR=reports/e2e cypress run --spec \"tests/desafio-qa/**/*.test.js\"",
+    "quality-gate": "node scripts/quality-gate.js",
+    "quality-gate:strict": "node scripts/quality-gate.js --strict",
     "cy:open": "cypress open --e2e"
   },
   "dependencies": {

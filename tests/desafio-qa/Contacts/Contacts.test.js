@@ -252,4 +252,19 @@ describe("Contacts - Register and list contacts", () => {
       });
     });
   });
+
+  context("Safe rendering of user text", () => {
+    it("Show a name with HTML as plain text without running it", () => {
+      const payload = '<img src=x onerror="window.__xss=true">';
+      cy.buildContact({ name: payload }).then((contact) => {
+        cy.createContactByApi(tenants.brasil.owner, contact);
+
+        cy.accessContactsPage(tenants.brasil.owner);
+
+        cy.contactRowShouldShow(contact, "+5511987654321");
+        page.rowOf(contact.email).find("img").should("not.exist");
+        cy.window().its("__xss").should("be.undefined");
+      });
+    });
+  });
 });

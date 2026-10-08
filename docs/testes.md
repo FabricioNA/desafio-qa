@@ -75,6 +75,7 @@ persistido** (consulta posterior).
 | Token malformado (produtos e contatos) | Token inválido é recusado | `Authorization: Bearer token.invalido.qualquer` | `401` com `{ error: "UNAUTHORIZED" }` |
 | Token assinado com outra chave | O backend valida a assinatura, mesmo com permissões elevadas | Gera token forjado (`cy.task`) com `employees/contacts/authorizeds: read/write` e chave diferente | `401` |
 | Token expirado | O backend valida a expiração | Gera token com `expiresIn` negativo | `401`, `UNAUTHORIZED` |
+| Expiração no tempo | O prazo realmente vence | Token de 2 s: consulta imediata, espera 3,1 s (passagem de tempo real, `cy.wait`) e consulta de novo | Primeiro `200`, depois `401` `UNAUTHORIZED` |
 | Esquema diferente de Bearer | Só `Bearer` é aceito | Envia `Authorization: Basic <token>` | `401` |
 
 ### Disponibilidade
@@ -213,6 +214,74 @@ fixture** `products/catalogo.json` (24 itens), sem números fixos no teste.
 | Todos os perfis consultam | RN01 | Super Admin, proprietário e atendente | `200` |
 | Exige autenticação | RN14 | Sem token | `401` |
 
+## API · Matriz de permissões — `tests/api/permissions/matriz-permissoes.test.js` (RN01, RN06, RN13, RN14)
+
+**Consiste em:** provar no **backend** que cada perfil só executa o que lhe é permitido, sem depender da tela. A matriz
+está em `tests/support/permission-matrix.js` (dados) e cada célula vira um teste.
+
+**Perfis:** Super Admin, Proprietário, Atendente, Proprietário da Colômbia e Sem login.
+**Como é testado:** `call(método, url, { token, body })` para cada endpoint × perfil; os corpos de `POST` são válidos e
+únicos. **Esperado** por célula (para `403` o corpo é `{ error: "FORBIDDEN" }` e para `401`, `{ error: "UNAUTHORIZED" }`):
+
+| Endpoint | Super Admin | Proprietário | Atendente | Prop. Colômbia | Sem login |
+|---|:-:|:-:|:-:|:-:|:-:|
+| `GET /api/authorizeds` | 200 | 403 | 403 | 403 | 401 |
+| `POST /api/authorizeds` | 201 | 403 | 403 | 403 | 401 |
+| `GET /api/contacts` | 403 | 200 | 200 | 200 | 401 |
+| `POST /api/contacts` | 403 | 201 | 403 | 201 | 401 |
+| `GET /api/employees` | 403 | 200 | 200 | 403 | 401 |
+| `POST /api/employees` | 403 | 201 | **403** ⚠️ | 403 | 401 |
+| `GET /api/products` | 200 | 200 | 200 | 200 | 401 |
+| `GET /api/picklists` | 200 | 200 | 200 | 200 | 401 |
+
+⚠️ **[BUG-001]** — a célula Atendente × `POST /api/employees` falha hoje: o sistema responde `201`. As demais células
+passam. São 40 testes, todos só de API (rápidos).
+
+## API · Isolamento e proteção de dados — `tests/api/isolation/isolamento-autorizadas.test.js` (RN04, RN05)
+
+**Consiste em:** em vez de só usar o sistema normalmente, tentar **burlar** o isolamento entre autorizadas.
+
+| Teste | O que valida | Como é testado | Esperado |
+|---|---|---|---|
+| `authorizedId` no corpo do contato | O servidor usa o token, não o corpo | Autorizada A cria um contato enviando o `authorizedId` da autorizada B | `201`; o contato aparece na lista de A e **não** na de B |
+| `authorizedId`, país, idioma e `id` no corpo do funcionário | Mass assignment | A cria funcionário enviando esses campos de B | `201`; `country = brasil` e `language = pt` (herdados de A), `id` gerado pelo servidor, e-mail ausente na lista de B |
+| `authorizedId` na consulta de funcionários | Parâmetro não escolhe a autorizada | `GET /api/employees?authorizedId=<B>` com o token de A | Mesmos funcionários da consulta normal de A; nenhum de B |
+| `authorizedId` na consulta de contatos | Idem | B cria um contato; A consulta com `?authorizedId=<B>` | O contato de B não aparece |
+| Sem senha nem hash (funcionários, autorizadas e criação) | Dados sensíveis | Serializa as respostas e procura `password`/`passwordHash` | Não encontrado |
+| `PUT`, `PATCH`, `DELETE` em contatos, funcionários e autorizadas | Operações não oferecidas | 9 combinações com o token do proprietário | `404`, `{ error: "NOT_FOUND" }` |
+
+## API · Robustez de entrada e valores limite — `tests/api/robustness/robustez-entrada.test.js` (RN09, RN10, RN12)
+
+**Consiste em:** entradas na fronteira ou fora do esperado: o sistema deve responder erro do **cliente** (4xx) e não falhar.
+
+### Requisições malformadas
+
+| Teste | O que valida | Como é testado | Esperado |
+|---|---|---|---|
+| **[BUG-009]** JSON malformado em contatos | Erro do cliente | `POST /api/contacts` com corpo `{"name": ` | `400`. *Falha hoje:* `500` |
+| **[BUG-009]** JSON malformado no login | Idem | `POST /api/login` com `{bad` | `400`. *Falha hoje:* `500` |
+| **[BUG-009]** Corpo acima de 100 kb | Limite de tamanho | Nome com 200 mil caracteres | `400` ou `413`. *Falha hoje:* `500` |
+| Tipos inesperados | Validação de tipo | `name: 123`, `email: ["a@b.com"]`, `phone: {}` | `400` com `REQUIRED` nos três campos |
+| E-mail com espaço no meio | Formato | `a b@example.com` | `400`, `INVALID_EMAIL` |
+
+### Valores limite
+
+| Teste | O que valida | Como é testado | Esperado |
+|---|---|---|---|
+| Nome com 2 caracteres | Limite mínimo | `Jo` | `201` |
+| Nome com 1 caractere e só espaços | Limite mínimo | `J` e `   ` | `MIN_LENGTH` e `REQUIRED` |
+| Telefone Brasil e Colômbia no limite | RN10 | Para cada país, usa `contatos.json › limites`: mínimo e máximo de dígitos aceitos; mínimo−1 e máximo+1 rejeitados | `201` nos limites; `400` `INVALID_PHONE` fora deles |
+| Produtos: `pageSize` 1, 50 e 51 | Paginação | Consulta com cada valor | 1 item; `pageSize = 50`; 51 vira 50 |
+| Produtos: `pageSize` zero ou não numérico | Padrão | `pageSize=0` e `pageSize=abc` | `pageSize = 10` |
+| Produtos: `page` zero ou não numérico | Padrão | `page=0` e `page=abc` | `page = 1` |
+
+### Armazenamento de texto
+
+| Teste | O que valida | Como é testado | Esperado |
+|---|---|---|---|
+| Nome com HTML | A API guarda o texto sem alterá-lo (o escape é da tela, ver UI) | Cria contato com `<img … onerror=…>` | `201`, nome devolvido idêntico |
+| Acentos e emoji | Codificação | Nome `José Ação 😀` | `201`, nome devolvido idêntico |
+
 ---
 
 # Testes de interface (UI)
@@ -325,6 +394,12 @@ ignorada de propósito (`cy.ignoreUnauthorizedRejection`), pois o objetivo é ve
 | Rótulos em espanhol (Colômbia) | RN07 | Proprietário da Colômbia | "Nombre" e "Teléfono" |
 | **[RN06]** Atendente só consulta | RN06 | Atendente abre Contatos | Vê o contato do proprietário e **não** vê o formulário |
 
+### Renderização segura de texto
+
+| Teste | O que valida | Como é testado | Esperado |
+|---|---|---|---|
+| Nome com HTML como texto | O front escapa o conteúdo digitado pelo usuário | Cria por API um contato com `<img src=x onerror="window.__xss=true">` no nome e abre a tela | A linha mostra o texto literal, não existe `<img>` na linha e `window.__xss` continua indefinido |
+
 ## UI · Funcionários — `tests/desafio-qa/Employees/` (RN01, RN04, RN05, RN06, RN07, RN09, RN11, RN13)
 
 **Consiste em:** cadastro e listagem de funcionários.
@@ -355,6 +430,7 @@ ignorada de propósito (`cy.ignoreUnauthorizedRejection`), pois o objetivo é ve
 | **[RN06]** Atendente só consulta | RN06 | Atendente abre a tela | Vê a lista; sem formulário |
 | **[BUG-001]** Atendente na rota de criação | RN01/RN06 | Atendente abre `#/employees/create` | Sem formulário. *Falha hoje:* o formulário aparece |
 | **[RN13]** Colômbia | RN13 | Abre `#/employees/create` com a Colômbia | Redireciona para `#/contacts`; sem formulário nem item de menu |
+| Nome com HTML como texto | Renderização segura | Cria por API um funcionário com `<img src=x onerror="window.__xss=true">` no nome e abre a tela | A linha mostra o texto literal, não existe `<img>` na linha e `window.__xss` continua indefinido |
 
 ## UI · Produtos — `tests/desafio-qa/Products/` (RN07, RN08, RN12)
 
@@ -416,7 +492,10 @@ de cada pasta.
 | `npm run test:api` | `tests/api/**/*.test.js` | `reports/api/index.html` |
 | `npm run test:e2e` | `tests/desafio-qa/**/*.test.js` | `reports/e2e/index.html` (screenshots das falhas embutidos) |
 | `npm run cy:open` | Cypress interativo | — |
+| `npm run quality-gate` | Lê os JSON dos relatórios e separa regressão de defeito conhecido; falha só com regressão | Resumo no terminal e na página da execução |
+| `npm run quality-gate:strict` | Idem, mas falha também com defeito conhecido em aberto | — |
 | `npx cypress run --spec "tests/desafio-qa/Contacts/Contacts.test.js"` | Um spec isolado | — |
 
 Pré-requisito: aplicação no ar em `http://localhost:3000` (`npm start`) com o banco semeado (`npm run seed`).
 **Resultado esperado hoje:** os testes sem marcação `[BUG-xxx]` passam; os marcados falham até o respectivo defeito ser corrigido.
+O quality gate (modo padrão) fica **aprovado** com os defeitos conhecidos em aberto e **reprova** diante de qualquer falha sem marcação.

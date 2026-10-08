@@ -142,6 +142,23 @@ describe("Autenticação e sessão (RN14)", () => {
         ContactsApi.list(forged).its("status").should("eq", 401);
       });
     });
+    it("aceita o token enquanto válido e o recusa depois que o prazo vence", () => {
+      cy.task("signToken", {
+        claims: decodeJwt(tenant.owner.token),
+        expiresIn: 2,
+      }).then((shortLived) => {
+        ContactsApi.list(shortLived).its("status").should("eq", 200);
+
+        // Passagem de tempo real: o token de 2 s precisa vencer no relógio do servidor
+        cy.wait(3100);
+
+        ContactsApi.list(shortLived).then((response) => {
+          expect(response.status).to.eq(401);
+          expect(response.body).to.deep.eq({ error: "UNAUTHORIZED" });
+        });
+      });
+    });
+
     it("bloqueia token expirado", () => {
       cy.task("signToken", {
         claims: decodeJwt(tenant.owner.token),

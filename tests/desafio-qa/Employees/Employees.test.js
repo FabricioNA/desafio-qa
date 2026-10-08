@@ -240,6 +240,19 @@ describe("Employees - Register and list employees", () => {
         cy.testIdShouldNotExist("employee-form");
         cy.testIdShouldNotExist("menu-employees");
       });
+
+      it("Show an employee name with HTML as plain text without running it", () => {
+        const payload = '<img src=x onerror="window.__xss=true">';
+        cy.buildEmployee({ name: payload }).then((employee) => {
+          cy.createEmployeeByApi(brasil.owner, employee);
+
+          cy.accessEmployeesPage(brasil.owner);
+
+          cy.employeeRowShouldShow(employee, "Atendente");
+          page.rowOf(employee.email).find("img").should("not.exist");
+          cy.window().its("__xss").should("be.undefined");
+        });
+      });
     },
   );
 });

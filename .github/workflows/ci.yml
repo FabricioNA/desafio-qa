@@ -2,6 +2,8 @@ name: CI
 
 # Gatilhos: todo pull request (feedback antes do merge), push na main (garante a branch principal),
 # execução agendada em dias úteis (pega regressões sem mudança de código) e disparo manual.
+# O quality gate separa regressão (reprova) de defeito conhecido [BUG-xxx] (aviso); o agendamento e o disparo
+# manual com "strict" também reprovam por defeito conhecido, para não esquecer os que continuam abertos.
 on:
   pull_request:
   push:
@@ -9,6 +11,11 @@ on:
   schedule:
     - cron: '0 6 * * 1-5' # 03:00 em Brasília
   workflow_dispatch:
+    inputs:
+      strict:
+        description: 'Reprovar também por defeitos conhecidos em aberto'
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -80,7 +87,7 @@ jobs:
         run: npx cypress install
 
       # continue-on-error garante que os dois conjuntos rodem e que o relatório seja sempre publicado;
-      # o resultado é consolidado no último passo, que falha o job se algum teste falhou.
+      # quem decide o resultado do job é o quality gate (último passo).
       - name: Testes de API
         id: api
         continue-on-error: true
@@ -91,17 +98,17 @@ jobs:
         continue-on-error: true
         run: npm run test:e2e
 
-      - name: Resumo da execução
+      - name: Quality gate (regressão x defeito conhecido)
+        id: gate
         if: always()
-        run: |
-          cp app.log reports/app.log 2>/dev/null || true
-          {
-            echo "## Resultado dos testes"
-            echo "- API: \`${{ steps.api.outcome }}\`"
-            echo "- E2E (UI): \`${{ steps.e2e.outcome }}\`"
-            echo ""
-            echo "Relatórios HTML e screenshots das falhas no artefato **relatorios-testes**."
-          } >> "$GITHUB_STEP_SUMMARY"
+        continue-on-error: true
+        env:
+          STRICT: ${{ github.event_name == 'schedule' || github.event.inputs.strict == 'true' }}
+        run: node scripts/quality-gate.js
+
+      - name: Anexar log da aplicação
+        if: always()
+        run: cp app.log reports/app.log 2>/dev/null || true
 
       - name: Publicar relatórios e evidências
         if: always()
@@ -115,8 +122,8 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Falhar o job se algum teste falhou
-        if: steps.api.outcome == 'failure' || steps.e2e.outcome == 'failure'
+      - name: Falhar o job se o quality gate reprovou
+        if: steps.gate.outcome == 'failure'
         run: |
-          echo "Há testes falhando. Consulte o relatório publicado como artefato."
+          echo "Quality gate reprovado: veja o resumo da execução e o relatório publicado como artefato."
           exit 1

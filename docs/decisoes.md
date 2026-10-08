@@ -7,26 +7,51 @@ valida o que o usuário vê e o comportamento dos componentes.
 
 | Camada | Pasta | Técnica | O que valida |
 |---|---|---|---|
-| API | `tests/api/<domínio>/*.test.js` | `cy.request` | Contratos (schema), permissões por perfil e país, isolamento entre autorizadas, validações, unicidade de e-mail, telefone por país, filtros e paginação, idioma/picklists, token e sessão, SLA de 2 s |
-| UI | `tests/desafio-qa/<Contexto>/<Contexto>.test.js` | Cypress + `cy.intercept` | Menu por perfil, formulários (mensagens de erro, sucesso, máscara de telefone), listagens, paginação e filtros, idioma exibido, estados de erro (mock 4xx/5xx), sessão expirada |
+| API | `tests/api/<domínio>/*.test.js` | `cy.request` | Contratos (schema), **matriz de permissões perfil × endpoint**, isolamento entre autorizadas e injeção de `authorizedId`, validações, valores limite, entradas malformadas, unicidade de e-mail, telefone por país, filtros e paginação, idioma/picklists, token e sessão (inclusive expiração no tempo), exposição de dados sensíveis, SLA de 2 s |
+| UI | `tests/desafio-qa/<Contexto>/<Contexto>.test.js` | Cypress + `cy.intercept` | Menu por perfil, formulários (mensagens de erro, sucesso, máscara de telefone), listagens, paginação e filtros, idioma exibido, estados de erro (mock 4xx/5xx), sessão expirada, renderização segura de texto (HTML não é executado) |
+
+## Priorização por risco
+
+As regras foram agrupadas por impacto e as camadas escolhidas conforme o risco. Segurança e isolamento de dados
+pesam mais que apresentação, e por isso concentram a maior parte dos testes de API.
+
+| Prioridade | Regras | Por quê | Onde se concentra |
+|---|---|---|---|
+| **P0 — crítico** | RN01 acesso por perfil, RN04 isolamento, RN06 consulta, RN11 unicidade, RN13 restrição por país, RN14 sessão | Falha permite acesso indevido, alteração não autorizada ou vazamento entre empresas | `permissions/`, `isolation/`, `auth/` (API) + redirecionamentos e sessão (UI) |
+| **P1 — alto** | RN03 autorizadas, RN05 funcionários, RN09 validações, RN10 telefone, RN12 produtos | Integridade dos cadastros e dos fluxos principais | `authorizeds/`, `employees/`, `contacts/`, `products/`, `robustness/` (API) + formulários (UI) |
+| **P2 — funcional** | RN02 menu, RN07 idioma, RN08 listas de valores | Consistência da experiência | `picklists/` (API) + `MenuAndAccess`, rótulos e idioma (UI) |
+
+## API × UI: esconder na tela não é segurança
+
+Ocultar um botão ou item de menu não impede a chamada direta ao backend. Por isso as regras de autorização são provadas
+**na API** e a UI só confirma a experiência:
+
+- a **matriz de permissões** (`tests/api/permissions/`) testa 8 endpoints × 5 perfis (Super Admin, Proprietário,
+  Atendente, Proprietário da Colômbia e sem login), com o status esperado em cada célula. É assim que o `BUG-001`
+  aparece por três caminhos diferentes (matriz, spec de funcionários e tela);
+- o **isolamento** (`tests/api/isolation/`) tenta o ataque, não só o uso normal: envia `authorizedId`, `country` e `id`
+  no corpo e `authorizedId` na consulta e confirma que o servidor usa o que vem do **token**;
+- a UI mantém só o que o usuário percebe: o item some do menu, o deep link redireciona, o formulário não aparece.
+
+Isso evita duplicar toda a cobertura da API na interface (menos tempo de execução e de manutenção).
 
 Cobertura por regra de negócio:
 
 | Regra | API | UI |
 |---|---|---|
-| RN01 Acesso por perfil | autenticação, autorizadas, contatos, funcionários, produtos | redirecionamento por deep link |
+| RN01 Acesso por perfil | **matriz perfil × endpoint**, autenticação, autorizadas, contatos, funcionários, produtos | redirecionamento por deep link |
 | RN02 Menu | — | menu de cada perfil |
 | RN03 Autorizadas | criação, país/idioma, login do proprietário | formulário e listagem |
-| RN04 Isolamento | contatos e funcionários entre autorizadas | lista de funcionários |
+| RN04 Isolamento | **ataques por `authorizedId`**, contatos e funcionários entre autorizadas | lista de funcionários |
 | RN05 Funcionários | criação, herança de país e idioma | formulário e listagem |
 | RN06 Consulta | atendente lê e não escreve | ausência do formulário |
 | RN07 / RN08 Idioma e listas | picklists, `*ToLabel`, produtos e funcionários | rótulos de telas, cargos, categorias |
-| RN09 Validações | campos obrigatórios, tamanho, e-mail, cargo, país | mensagens exibidas |
-| RN10 Telefone | formatos por país e normalização | máscara, colagem, aviso ao sair do campo |
+| RN09 Validações | campos obrigatórios, tamanho, e-mail, cargo, país, **tipos inesperados e JSON malformado** | mensagens exibidas |
+| RN10 Telefone | formatos por país, normalização e **limites (mínimo, máximo, ±1 dígito)** | máscara, colagem, aviso ao sair do campo |
 | RN11 Unicidade | e-mail de funcionário (global) e de contato (por autorizada) | mensagem de duplicidade |
 | RN12 Produtos | filtros, paginação, imagem PNG | tabela, pager, filtros, imagem carregada |
 | RN13 Restrição por país | Colômbia sem funcionários (token e 403) | menu e deep link |
-| RN14 Sessão | token ausente, inválido, forjado e expirado | volta ao login |
+| RN14 Sessão | token ausente, inválido, forjado, expirado e **expiração no tempo** | volta ao login |
 
 ## Por que Cypress
 
@@ -87,7 +112,24 @@ tests/
 Os testes descrevem o comportamento **esperado** pelo README. Quando o sistema não cumpre uma regra, o teste falha e leva
 o prefixo `[BUG-xxx]` no título, ligado ao [registro de defeitos](defeitos.md). Não usei `skip` nem inverti asserções:
 o teste continua valendo como regressão e passa sozinho quando o defeito for corrigido.
-Como consequência o pipeline fica **vermelho** enquanto houver defeitos abertos, o que é intencional neste desafio.
+Uma suíte toda verde não é o objetivo quando o sistema diverge das regras: as falhas conhecidas ficam visíveis no relatório.
+
+### Quality gate: regressão × defeito conhecido
+
+Se todo defeito aberto deixasse o pipeline vermelho, uma **regressão nova** passaria despercebida no meio das falhas
+esperadas. Por isso `scripts/quality-gate.js` lê o JSON dos relatórios e classifica cada falha:
+
+| Situação | Classificação | Efeito no gate |
+|---|---|---|
+| Falha em teste **sem** `[BUG-xxx]` | **Regressão** | Reprova |
+| Falha em teste `[BUG-xxx]` | Defeito conhecido em aberto | Aviso (reprova só no modo `--strict`) |
+| Teste `[BUG-xxx]` que **passou** | Defeito aparentemente corrigido | Aviso: remover a marcação e fechar o defeito |
+| Relatório ausente (suíte não rodou) | Falha de execução | Reprova |
+
+O resumo (tabela por suíte e contagem por defeito) vai para a página da execução e cada falha vira uma anotação
+(`::error` para regressão, `::warning` para defeito conhecido). O modo estrito (`npm run quality-gate:strict`) é usado
+no agendamento e no disparo manual com a opção **strict**, para que os defeitos abertos continuem aparecendo como vermelho
+periodicamente.
 
 ## Relatório
 
@@ -107,8 +149,22 @@ Gatilhos escolhidos em `.github/workflows/ci.yml`:
 | `schedule` (dias úteis, 03:00 BRT) | detecta regressões e dependências quebradas sem mudança de código |
 | `workflow_dispatch` | reexecução manual |
 
-Fluxo: `npm ci`, typecheck (app e testes), build do front, seed, subir a aplicação e aguardar o health check, instalar o
-binário do Cypress (com cache), `npm run test:api`, `npm run test:e2e`, resumo da execução, publicação do artefato
-**relatorios-testes** (HTML e screenshots) e, por fim, falha do job se algum conjunto falhou.
-Os dois conjuntos usam `continue-on-error` para que ambos rodem e o relatório seja sempre publicado.
-O `concurrency` cancela execuções antigas da mesma branch.
+Fluxo: `npm ci`, typecheck, build do front, seed, subir a aplicação e aguardar o health check, instalar o
+binário do Cypress (com cache), `npm run test:api`, `npm run test:e2e`, **quality gate**, publicação do artefato
+**relatorios-testes** (HTML, JSON e screenshots das falhas) e, por fim, falha do job se o gate reprovou.
+Os dois conjuntos usam `continue-on-error` para que ambos rodem e o relatório seja sempre publicado; quem decide o
+resultado do job é o quality gate. O `concurrency` cancela execuções antigas da mesma branch.
+
+## Estabilidade: retries desligados de propósito
+
+Não configurei `retries` no Cypress. Cada spec cria os próprios dados e não depende de outros, então uma falha é
+determinística: repetir só esconderia um teste instável (e dobraria o tempo dos testes de defeito, que sempre falham).
+Se surgir instabilidade real, a correção é no teste (espera por requisição, dado único), não uma nova tentativa.
+A única passagem de tempo real da suíte é intencional: o teste de expiração de sessão espera o token de 2 s vencer.
+
+## Próximos passos
+
+- Teste de contrato com o `openapi.json` da aplicação.
+- Execução em mais de um navegador e teste de acessibilidade das telas.
+- Cenários de alteração e exclusão, quando o sistema passar a oferecê-los.
+- Execução em paralelo (`cypress run --parallel`) se a suíte crescer.
