@@ -4,3 +4,5 @@ public/app.js.map
 
 reports/*
 !reports/.gitkeep
+
+.env
