@@ -1,0 +1,39 @@
+{
+  "pt": {
+    "menu": { "authorizeds": "Autorizadas", "contacts": "Contatos", "products": "Produtos", "employees": "Funcionários" },
+    "logout": "Sair",
+    "titulos": { "contacts": "Contatos", "products": "Produtos", "employees": "Funcionários", "authorizeds": "Autorizadas" },
+    "contatos": { "nome": "Nome", "email": "E-mail", "telefone": "Telefone", "vazio": "Nenhum contato cadastrado.", "sucesso": "Contato salvo com sucesso." },
+    "funcionarios": { "selecione": "Selecione", "sucesso": "Funcionário cadastrado com sucesso.", "todos": "Todos" },
+    "autorizadas": { "sucesso": "Autorizada e proprietário cadastrados com sucesso." },
+    "produtos": { "vazio": "Nenhum produto encontrado.", "pagina": "Página {page} de {pages} — {total} itens" },
+    "erros": {
+      "REQUIRED": "Este campo é obrigatório.",
+      "MIN_LENGTH": "Informe ao menos 2 caracteres.",
+      "INVALID_EMAIL": "E-mail inválido.",
+      "INVALID_PHONE": "Telefone inválido para o país.",
+      "DUPLICATE_EMAIL": "Este e-mail já está cadastrado.",
+      "INVALID_CREDENTIALS": "E-mail ou senha inválidos.",
+      "FORBIDDEN": "Você não tem permissão para esta ação.",
+      "GENERIC": "Não foi possível concluir a operação."
+    }
+  },
+  "es": {
+    "menu": { "authorizeds": "Autorizadas", "contacts": "Contactos", "products": "Productos", "employees": "Empleados" },
+    "logout": "Salir",
+    "titulos": { "contacts": "Contactos", "products": "Productos", "employees": "Empleados", "authorizeds": "Autorizadas" },
+    "contatos": { "nome": "Nombre", "email": "Correo electrónico", "telefone": "Teléfono", "vazio": "No hay contactos registrados.", "sucesso": "Contacto guardado con éxito." },
+    "funcionarios": { "selecione": "Seleccione", "sucesso": "Empleado registrado con éxito.", "todos": "Todos" },
+    "autorizadas": { "sucesso": "Autorizada y propietario registrados con éxito." },
+    "produtos": { "vazio": "No se encontraron productos.", "pagina": "Página {page} de {pages} — {total} elementos" },
+    "erros": {
+      "REQUIRED": "Este campo es obligatorio.",
+      "MIN_LENGTH": "Ingresa al menos 2 caracteres.",
+      "INVALID_EMAIL": "Correo electrónico inválido.",
+      "INVALID_PHONE": "Teléfono inválido para el país.",
+      "DUPLICATE_EMAIL": "Este correo ya está registrado.",
+      "FORBIDDEN": "No tienes permiso para esta acción.",
+      "GENERIC": "No fue posible completar la operación."
+    }
+  }
+}

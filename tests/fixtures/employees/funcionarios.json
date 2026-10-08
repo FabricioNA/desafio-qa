@@ -1,0 +1,17 @@
+{
+  "funcionario": {
+    "name": "Funcionário QA",
+    "emailPrefix": "funcionario"
+  },
+  "validacoes": [
+    { "titulo": "nome vazio", "override": { "name": "" }, "campo": "name", "codigo": "REQUIRED" },
+    { "titulo": "nome com 1 caractere", "override": { "name": "F" }, "campo": "name", "codigo": "MIN_LENGTH" },
+    { "titulo": "e-mail vazio", "override": { "email": "" }, "campo": "email", "codigo": "REQUIRED" },
+    { "titulo": "e-mail inválido", "override": { "email": "funcionario@" }, "campo": "email", "codigo": "INVALID_EMAIL" },
+    { "titulo": "cargo vazio", "override": { "role": "" }, "campo": "role", "codigo": "REQUIRED" },
+    { "titulo": "cargo Super Admin (não atribuível)", "override": { "role": "Super Admin" }, "campo": "role", "codigo": "INVALID_ROLE" },
+    { "titulo": "cargo inexistente", "override": { "role": "Gerente" }, "campo": "role", "codigo": "INVALID_ROLE" },
+    { "titulo": "cargo em espanhol (valor deve trafegar em português)", "override": { "role": "Asistente" }, "campo": "role", "codigo": "INVALID_ROLE" }
+  ],
+  "cargosAtribuiveis": ["Atendente", "Proprietário"]
+}

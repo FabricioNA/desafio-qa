@@ -27,6 +27,12 @@ Outros comandos:
 | `npm run seed` | Apaga e recria os dados iniciais (1 Super Admin e 24 produtos; remove autorizadas, funcionários e contatos criados) |
 | `npm run dev` | Igual ao `start`, reiniciando o servidor a cada alteração |
 | `npm run typecheck` | Checagem de tipos |
+| `npm run test:api` | Testes de API (Cypress) — relatório em `reports/api/index.html` |
+| `npm run test:e2e` | Testes de interface (Cypress) — relatório em `reports/e2e/index.html` |
+| `npm run cy:open` | Abre o Cypress no modo interativo |
+
+Os testes exigem a aplicação no ar em `http://localhost:3000` (`npm start`); use `BASE_URL` para outro endereço.
+Documentação de cada teste em [docs/testes.md](docs/testes.md), decisões em [docs/decisoes.md](docs/decisoes.md) e defeitos encontrados em [docs/defeitos.md](docs/defeitos.md).
 
 Configuração: as variáveis (porta, Mongo, segredo do token e credenciais iniciais) ficam no arquivo `.env`, na raiz do projeto (todos os valores são fictícios).
 
@@ -173,6 +179,8 @@ O backend valida de novo, com as mesmas regras.
 ```
 src/server/   API (rotas, auth, permissões, validação, seed, conexão com o Mongo)
 src/web/      Front (páginas, i18n em pt/es/en, cliente da API)
+tests/        Suíte Cypress (API e UI com Page Objects, fixtures e suporte)
+docs/         Decisões de teste e registro de defeitos
 public/       index.html e CSS (o app.js é gerado no build)
 .github/workflows/ci.yml   Instala, checa tipos, gera o front e confere o health check
 ```
@@ -184,9 +192,9 @@ public/       index.html e CSS (o app.js é gerado no build)
 
 ## GitHub Actions
 
-O workflow sobe um MongoDB como serviço, instala as dependências, checa tipos, gera o front, inicia a aplicação
-e confere `GET /api/health`. O ponto de extensão para os passos de teste está comentado no final do arquivo.
-Depois de gerar o `package-lock.json` (rodando `npm install` uma vez), você pode trocar `npm install` por `npm ci` no workflow.
+O workflow sobe um MongoDB como serviço, instala as dependências (`npm ci`), checa tipos, gera o front, recria os dados,
+inicia a aplicação, roda `test:api` e `test:e2e` e publica o artefato **relatorios-testes** (HTML e screenshots das falhas).
+Gatilhos: pull request, push na `main`, agendado (dias úteis) e manual. Detalhes em [docs/decisoes.md](docs/decisoes.md).
 
 ## Anonimização
 

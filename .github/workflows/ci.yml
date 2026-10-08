@@ -1,12 +1,23 @@
 name: CI
 
+# Gatilhos: todo pull request (feedback antes do merge), push na main (garante a branch principal),
+# execução agendada em dias úteis (pega regressões sem mudança de código) e disparo manual.
 on:
-  push:
   pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1-5' # 03:00 em Brasília
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build-and-smoke:
+  build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     services:
       mongo:
@@ -23,6 +34,7 @@ jobs:
       MONGO_URI: mongodb://localhost:27017
       MONGO_DB: desafio_qa_ci
       JWT_SECRET: ci-only-secret
+      SUPERADMIN_PASSWORD: Admin@123
       PORT: 3000
 
     steps:
@@ -31,9 +43,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Instalar dependências
-        run: npm install
+        run: npm ci
 
       - name: Typecheck
         run: npm run typecheck
@@ -41,7 +54,10 @@ jobs:
       - name: Gerar bundle do front
         run: npm run build:web
 
-      - name: Subir a aplicação e conferir o health check
+      - name: Recriar os dados iniciais
+        run: npm run seed
+
+      - name: Subir a aplicação
         run: |
           npm start > app.log 2>&1 &
           for i in $(seq 1 30); do
@@ -54,5 +70,53 @@ jobs:
           done
           echo "Aplicação não subiu a tempo"; cat app.log; exit 1
 
-      # Ponto de extensão: adicione aqui os passos de testes (API e E2E) do desafio,
-      # por exemplo "npm run test:api" e "npx playwright test", antes do job terminar.
+      - name: Cache do binário do Cypress
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Instalar o binário do Cypress
+        run: npx cypress install
+
+      # continue-on-error garante que os dois conjuntos rodem e que o relatório seja sempre publicado;
+      # o resultado é consolidado no último passo, que falha o job se algum teste falhou.
+      - name: Testes de API
+        id: api
+        continue-on-error: true
+        run: npm run test:api
+
+      - name: Testes E2E (UI)
+        id: e2e
+        continue-on-error: true
+        run: npm run test:e2e
+
+      - name: Resumo da execução
+        if: always()
+        run: |
+          cp app.log reports/app.log 2>/dev/null || true
+          {
+            echo "## Resultado dos testes"
+            echo "- API: \`${{ steps.api.outcome }}\`"
+            echo "- E2E (UI): \`${{ steps.e2e.outcome }}\`"
+            echo ""
+            echo "Relatórios HTML e screenshots das falhas no artefato **relatorios-testes**."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar relatórios e evidências
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-testes
+          path: |
+            reports/api
+            reports/e2e
+            reports/app.log
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Falhar o job se algum teste falhou
+        if: steps.api.outcome == 'failure' || steps.e2e.outcome == 'failure'
+        run: |
+          echo "Há testes falhando. Consulte o relatório publicado como artefato."
+          exit 1

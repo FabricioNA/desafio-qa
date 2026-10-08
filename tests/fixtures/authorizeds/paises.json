@@ -1,0 +1,23 @@
+[
+  {
+    "country": "brasil",
+    "language": "pt",
+    "countryLabel": "Brasil",
+    "ownerRoleLabel": "Proprietário",
+    "attendantRoleLabel": "Atendente"
+  },
+  {
+    "country": "argentina",
+    "language": "es",
+    "countryLabel": "Argentina",
+    "ownerRoleLabel": "Propietario",
+    "attendantRoleLabel": "Asistente"
+  },
+  {
+    "country": "colombia",
+    "language": "es",
+    "countryLabel": "Colombia",
+    "ownerRoleLabel": "Propietario",
+    "attendantRoleLabel": "Asistente"
+  }
+]

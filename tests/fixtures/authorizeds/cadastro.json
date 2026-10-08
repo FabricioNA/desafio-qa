@@ -1,0 +1,18 @@
+{
+  "valido": {
+    "authorizedName": "Autorizada Exemplo",
+    "ownerName": "Maria Proprietária",
+    "country": "brasil"
+  },
+  "invalidos": [
+    { "titulo": "nome da autorizada vazio", "override": { "authorizedName": "" }, "campo": "authorizedName", "codigo": "REQUIRED" },
+    { "titulo": "nome da autorizada com 1 caractere", "override": { "authorizedName": "A" }, "campo": "authorizedName", "codigo": "MIN_LENGTH" },
+    { "titulo": "nome do proprietário vazio", "override": { "ownerName": "   " }, "campo": "ownerName", "codigo": "REQUIRED" },
+    { "titulo": "nome do proprietário com 1 caractere", "override": { "ownerName": "B" }, "campo": "ownerName", "codigo": "MIN_LENGTH" },
+    { "titulo": "e-mail do proprietário vazio", "override": { "ownerEmail": "" }, "campo": "ownerEmail", "codigo": "REQUIRED" },
+    { "titulo": "e-mail do proprietário sem arroba", "override": { "ownerEmail": "semarroba.example.com" }, "campo": "ownerEmail", "codigo": "INVALID_EMAIL" },
+    { "titulo": "e-mail do proprietário sem domínio", "override": { "ownerEmail": "usuario@" }, "campo": "ownerEmail", "codigo": "INVALID_EMAIL" },
+    { "titulo": "país vazio", "override": { "country": "" }, "campo": "country", "codigo": "REQUIRED" },
+    { "titulo": "país fora da lista", "override": { "country": "chile" }, "campo": "country", "codigo": "INVALID_COUNTRY" }
+  ]
+}

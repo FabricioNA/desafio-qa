@@ -1,0 +1,31 @@
+{
+  "total": 11,
+  "page": 1,
+  "pageSize": 10,
+  "items": [
+    {
+      "id": "mock-ativo",
+      "code": "MOCK0001",
+      "name": "PRODUTO MOCK ATIVO",
+      "model": "MK01",
+      "category": "Peças",
+      "categoryToLabel": "Peças",
+      "status": "Ativo",
+      "statusToLabel": "Ativo",
+      "price": 1234.5,
+      "imageUrl": "/api/products/mock-ativo/image"
+    },
+    {
+      "id": "mock-inativo",
+      "code": "MOCK0002",
+      "name": "PRODUTO MOCK INATIVO",
+      "model": "MK02",
+      "category": "SKU (White Goods Mercado Nacional)",
+      "categoryToLabel": "SKU (White Goods Mercado Nacional)",
+      "status": "Inativo",
+      "statusToLabel": "Inativo",
+      "price": 9.9,
+      "imageUrl": "/api/products/mock-inativo/image"
+    }
+  ]
+}

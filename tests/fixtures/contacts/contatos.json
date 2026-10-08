@@ -1,0 +1,76 @@
+{
+  "contato": {
+    "name": "João Contato",
+    "emailPrefix": "contato"
+  },
+  "validacoes": [
+    { "titulo": "nome vazio", "override": { "name": "" }, "campo": "name", "codigo": "REQUIRED" },
+    { "titulo": "nome com 1 caractere", "override": { "name": "J" }, "campo": "name", "codigo": "MIN_LENGTH" },
+    { "titulo": "e-mail vazio", "override": { "email": "" }, "campo": "email", "codigo": "REQUIRED" },
+    { "titulo": "e-mail sem arroba", "override": { "email": "contato.example.com" }, "campo": "email", "codigo": "INVALID_EMAIL" },
+    { "titulo": "e-mail sem domínio", "override": { "email": "contato@" }, "campo": "email", "codigo": "INVALID_EMAIL" },
+    { "titulo": "telefone vazio", "override": { "phone": "" }, "campo": "phone", "codigo": "REQUIRED" }
+  ],
+  "telefones": {
+    "brasil": {
+      "validos": [
+        { "titulo": "celular com máscara", "entrada": "(11) 98765-4321", "esperado": "+5511987654321" },
+        { "titulo": "fixo com máscara", "entrada": "(11) 3456-7890", "esperado": "+551134567890" },
+        { "titulo": "celular com código do país", "entrada": "+55 11 98765-4321", "esperado": "+5511987654321" },
+        { "titulo": "somente dígitos", "entrada": "11987654321", "esperado": "+5511987654321" }
+      ],
+      "invalidos": [
+        { "titulo": "9 dígitos (curto)", "entrada": "119876543" },
+        { "titulo": "12 dígitos sem o código do país (longo)", "entrada": "119876543210" },
+        { "titulo": "somente letras", "entrada": "abcdefghij" }
+      ]
+    },
+    "argentina": {
+      "validos": [
+        { "titulo": "10 dígitos", "entrada": "1123456789", "esperado": "+541123456789" },
+        { "titulo": "com código do país", "entrada": "+54 11 2345 6789", "esperado": "+541123456789" }
+      ],
+      "invalidos": [
+        { "titulo": "5 dígitos (curto)", "entrada": "12345" },
+        { "titulo": "11 dígitos (longo)", "entrada": "11234567890" },
+        { "titulo": "somente letras", "entrada": "abcdefghij" }
+      ]
+    },
+    "colombia": {
+      "validos": [
+        { "titulo": "10 dígitos com máscara", "entrada": "300 123 4567", "esperado": "+573001234567" },
+        { "titulo": "com código do país", "entrada": "+57 300 123 4567", "esperado": "+573001234567" }
+      ],
+      "invalidos": [
+        { "titulo": "8 dígitos (curto)", "entrada": "30012345" },
+        { "titulo": "11 dígitos (longo)", "entrada": "30012345678" }
+      ]
+    }
+  },
+  "interface": {
+    "placeholders": {
+      "brasil": "+55 (__) _____-____",
+      "argentina": "+54 __________",
+      "colombia": "+57 ___ ___ ____"
+    },
+    "mascaras": {
+      "brasil": [
+        { "titulo": "celular (11 dígitos)", "digitado": "11987654321", "exibido": "+55 (11) 98765-4321" },
+        { "titulo": "fixo (10 dígitos)", "digitado": "1134567890", "exibido": "+55 (11) 3456-7890" },
+        { "titulo": "letras e símbolos são bloqueados", "digitado": "a1b1-9#8", "exibido": "+55 (11) 98" },
+        { "titulo": "excedente de dígitos é descartado", "digitado": "119876543210999", "exibido": "+55 (11) 98765-4321" }
+      ],
+      "argentina": [
+        { "titulo": "somente dígitos com prefixo", "digitado": "1123456789", "exibido": "+54 1123456789" }
+      ],
+      "colombia": [
+        { "titulo": "agrupamento 3-3-4", "digitado": "3001234567", "exibido": "+57 300 123 4567" }
+      ]
+    },
+    "colagem": {
+      "brasil": { "colado": "+5511987654321", "exibido": "+55 (11) 98765-4321" },
+      "colombia": { "colado": "573001234567", "exibido": "+57 300 123 4567" }
+    },
+    "telefoneIncompleto": { "brasil": "1198", "argentina": "11234", "colombia": "3001" }
+  }
+}
