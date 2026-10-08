@@ -29,7 +29,7 @@ quality gate e pipeline no GitHub Actions.
   (`[BUG-xxx]`), para que defeitos abertos não escondam uma quebra nova.
 - **Pipeline** (`.github/workflows/ci.yml`): sobe MongoDB e a aplicação, roda as duas suítes, aplica o gate e publica o artefato
   `relatorios-testes`.
-- **Documentação** (`docs/`): [testes.md](docs/testes.md), [decisoes.md](docs/decisoes.md) e [defeitos.md](docs/defeitos.md).
+- **Documentação** (`docs/`): [testes.md](docs/testes.md), [decisoes.md](docs/decisoes.md), [defeitos.md](docs/defeitos.md) e [seguranca-env.md](docs/seguranca-env.md).
 
 ### Principais decisões
 
@@ -103,7 +103,8 @@ npm run quality-gate
 | `npm run cy:open` | Cypress no modo interativo |
 
 Use `BASE_URL` para testar outro endereço e um banco próprio com `MONGO_DB`. As variáveis (porta, Mongo, segredo do token
-e credenciais iniciais, todas fictícias) ficam no `.env`.
+e credenciais iniciais) têm valores padrão fictícios no código (`src/server/config.ts`) e podem ser sobrescritas por
+variáveis de ambiente ou por um `.env` local (ignorado pelo Git).
 
 **Acesso inicial:** `superadmin@example.com` / `Admin@123`. Proprietários e funcionários criados pelas telas recebem a
 senha `Senha@123`.
@@ -134,6 +135,7 @@ screenshots das falhas) → reprovar o job se o gate reprovou. O resumo do gate 
 | [docs/testes.md](docs/testes.md) | Cada teste de API e UI: o que consiste, o que valida, como é testado e o que se espera |
 | [docs/decisoes.md](docs/decisoes.md) | Estratégia, priorização por risco, organização, quality gate, pipeline e próximos passos |
 | [docs/defeitos.md](docs/defeitos.md) | Os 9 defeitos com passos de reprodução, observações e o que foi verificado sem defeito |
+| [docs/seguranca-env.md](docs/seguranca-env.md) | Achado de segurança SEC-001 (`.env` versionado e segredos padrão), o que foi feito e as pendências |
 
 ---
 
@@ -214,7 +216,7 @@ tests/
   fixtures/                Massa de dados
   support/                 Page Objects, clientes de API, tenant, matriz de permissões
 scripts/quality-gate.js    Classifica falhas: regressão x defeito conhecido
-docs/                      testes.md, decisoes.md, defeitos.md
+docs/                      testes.md, decisoes.md, defeitos.md, seguranca-env.md
 reports/                   Relatórios gerados (não versionados)
 cypress.config.js          Configuração, reporter e tarefas do Cypress
 .github/workflows/ci.yml   Pipeline

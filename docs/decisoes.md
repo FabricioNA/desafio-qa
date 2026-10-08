@@ -100,6 +100,9 @@ tests/
 - **Isolamento e independência:** cada spec cria a sua própria autorizada pela API com e-mails únicos
   (`provisionTenant`). Não há ordem entre specs nem limpeza obrigatória, e a suíte pode ser repetida sem `npm run seed`.
   Não existe rota de exclusão, por isso o isolamento é por dados novos, não por teardown.
+- **Sem `.env` versionado:** o arquivo foi removido do repositório e ignorado no `.gitignore`. A aplicação usa valores
+  padrão fictícios e aceita sobrescrita por variáveis de ambiente. Detalhes, riscos e pendências em
+  [seguranca-env.md](seguranca-env.md).
 - **Massa de dados em fixtures**, sem depender de `.env`. Os valores esperados dos produtos vêm de `catalogo.json`
   (derivado do catálogo do sistema) e os filtros esperados são calculados a partir dele, sem números fixos nos testes.
 - **Títulos por comportamento**, não por protocolo (por exemplo, "não permite dois proprietários com o mesmo e-mail").
@@ -168,3 +171,5 @@ A única passagem de tempo real da suíte é intencional: o teste de expiração
 - Execução em mais de um navegador e teste de acessibilidade das telas.
 - Cenários de alteração e exclusão, quando o sistema passar a oferecê-los.
 - Execução em paralelo (`cypress run --parallel`) se a suíte crescer.
+- Exigir `JWT_SECRET` e `SUPERADMIN_PASSWORD` em produção e limpar o histórico do Git (pendências do SEC-001 em
+  [seguranca-env.md](seguranca-env.md)).
